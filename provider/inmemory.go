@@ -20,7 +20,7 @@ import (
 	"errors"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/kubernetes-incubator/external-dns/endpoint"
 	"github.com/kubernetes-incubator/external-dns/plan"
@@ -178,7 +178,7 @@ func convertToInMemoryRecord(endpoints []*endpoint.Endpoint) []*inMemoryRecord {
 	records := []*inMemoryRecord{}
 	for _, ep := range endpoints {
 		records = append(records, &inMemoryRecord{
-			Type:   suitableType(ep),
+			Type:   ep.RecordType,
 			Name:   ep.DNSName,
 			Target: ep.Target,
 		})

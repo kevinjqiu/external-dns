@@ -360,15 +360,69 @@ func testIngressEndpoints(t *testing.T) {
 					dnsnames: []string{"example2.org"},
 					ips:      []string{"8.8.8.8"},
 				},
+				{
+					name:      "fake3",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "1.2.3.4",
+					},
+					dnsnames: []string{"example3.org"},
+					ips:      []string{},
+				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "example.org",
-					Target:  "ingress-target.com",
+					DNSName:    "example.org",
+					Target:     "ingress-target.com",
+					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
-					DNSName: "example2.org",
-					Target:  "ingress-target.com",
+					DNSName:    "example2.org",
+					Target:     "ingress-target.com",
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "example3.org",
+					Target:     "1.2.3.4",
+					RecordType: endpoint.RecordTypeA,
+				},
+			},
+		},
+		{
+			title:           "ingress rules with annotation and custom TTL",
+			targetNamespace: "",
+			ingressItems: []fakeIngress{
+				{
+					name:      "fake1",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "ingress-target.com",
+						ttlAnnotationKey:    "6",
+					},
+					dnsnames: []string{"example.org"},
+					ips:      []string{},
+				},
+				{
+					name:      "fake2",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "ingress-target.com",
+						ttlAnnotationKey:    "1",
+					},
+					dnsnames: []string{"example2.org"},
+					ips:      []string{"8.8.8.8"},
+				},
+			},
+			expected: []*endpoint.Endpoint{
+				{
+					DNSName:   "example.org",
+					Target:    "ingress-target.com",
+					RecordTTL: endpoint.TTL(6),
+				},
+				{
+					DNSName:   "example2.org",
+					Target:    "ingress-target.com",
+					RecordTTL: endpoint.TTL(1),
 				},
 			},
 		},
@@ -395,15 +449,32 @@ func testIngressEndpoints(t *testing.T) {
 					dnsnames: []string{},
 					ips:      []string{"8.8.8.8"},
 				},
+				{
+					name:      "fake3",
+					namespace: namespace,
+					annotations: map[string]string{
+						targetAnnotationKey: "1.2.3.4",
+					},
+					dnsnames:  []string{},
+					ips:       []string{},
+					hostnames: []string{},
+				},
 			},
 			expected: []*endpoint.Endpoint{
 				{
-					DNSName: "fake1.ext-dns.test.com",
-					Target:  "ingress-target.com",
+					DNSName:    "fake1.ext-dns.test.com",
+					Target:     "ingress-target.com",
+					RecordType: endpoint.RecordTypeCNAME,
 				},
 				{
-					DNSName: "fake2.ext-dns.test.com",
-					Target:  "ingress-target.com",
+					DNSName:    "fake2.ext-dns.test.com",
+					Target:     "ingress-target.com",
+					RecordType: endpoint.RecordTypeCNAME,
+				},
+				{
+					DNSName:    "fake3.ext-dns.test.com",
+					Target:     "1.2.3.4",
+					RecordType: endpoint.RecordTypeA,
 				},
 			},
 			fqdnTemplate: "{{.Name}}.ext-dns.test.com",

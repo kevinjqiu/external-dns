@@ -23,8 +23,8 @@ import (
 	"syscall"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	log "github.com/sirupsen/logrus"
 
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
@@ -54,9 +54,12 @@ func main() {
 	if cfg.DryRun {
 		log.Info("running in dry-run mode. No changes to DNS records will be made.")
 	}
-	if cfg.Debug {
-		log.SetLevel(log.DebugLevel)
+
+	ll, err := log.ParseLevel(cfg.LogLevel)
+	if err != nil {
+		log.Fatalf("failed to parse log level: %v", err)
 	}
+	log.SetLevel(ll)
 
 	stopChan := make(chan struct{}, 1)
 
@@ -84,19 +87,22 @@ func main() {
 	endpointsSource := source.NewDedupSource(source.NewMultiSource(sources))
 
 	domainFilter := provider.NewDomainFilter(cfg.DomainFilter)
+	zoneTypeFilter := provider.NewZoneTypeFilter(cfg.AWSZoneType)
 
 	var p provider.Provider
 	switch cfg.Provider {
 	case "aws":
-		p, err = provider.NewAWSProvider(domainFilter, cfg.DryRun)
+		p, err = provider.NewAWSProvider(domainFilter, zoneTypeFilter, cfg.DryRun)
 	case "azure":
 		p, err = provider.NewAzureProvider(cfg.AzureConfigFile, domainFilter, cfg.AzureResourceGroup, cfg.DryRun)
 	case "cloudflare":
-		p, err = provider.NewCloudFlareProvider(domainFilter, cfg.DryRun)
+		p, err = provider.NewCloudFlareProvider(domainFilter, cfg.CloudflareProxied, cfg.DryRun)
 	case "google":
 		p, err = provider.NewGoogleProvider(cfg.GoogleProject, domainFilter, cfg.DryRun)
 	case "digitalocean":
 		p, err = provider.NewDigitalOceanProvider(domainFilter, cfg.DryRun)
+	case "dnsimple":
+		p, err = provider.NewDnsimpleProvider(domainFilter, cfg.DryRun)
 	case "inmemory":
 		p, err = provider.NewInMemoryProvider(provider.InMemoryWithDomain(domainFilter), provider.InMemoryWithLogging()), nil
 	default:
